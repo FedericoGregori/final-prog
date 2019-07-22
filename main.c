@@ -27,6 +27,7 @@ void agregarInscripcion();
 void agregarCorrelativa();
 void agregarNota();
 void procesarInscripciones();
+void imprimirInscripciones();
 
 /* Realizar un programa que guarde en un nuevo archivo las inscripciones de los
  * alumnos que están en condiciones de rendir de tener aprobada la correlativa
@@ -42,7 +43,7 @@ int main(void) {
         printf("\n3- Ingresar notas.");
         printf("\n4- Procesar inscripciones finales.\n");
 
-        printf("\n0- Salir.\n");
+        printf("\n0- Mostrar Inscripciones Definitivas y Salir.\n");
 
         printf("Ingrese elección: ");
         scanf("%d", &opc);
@@ -64,6 +65,10 @@ int main(void) {
             break;
         }
     }
+
+    imprimirInscripciones();
+
+    return 0;
 }
 
 void agregarInscripcion() {
@@ -174,9 +179,14 @@ void procesarInscripciones() {
                                 }
                                 rewind(cp);
                             }
+                        } else {
+                            fread(&c, sizeof(correlativas), 1, cp);
+                        }
+
+                        if (feof(cp)) {
+                            fread(&i, sizeof(inscripciones), 1, ip);
                         }
                     }
-                    fread(&i, sizeof(inscripciones), 1, ip);
                 }
             }
         }
@@ -184,4 +194,19 @@ void procesarInscripciones() {
     /* exit(-1); */
     /* exit()[stdlib.h] closes and flushes all stdio streams */
     fcloseall();
+}
+
+void imprimirInscripciones() {
+    inscripciones i;
+    FILE *fp;
+
+    if ((fp = fopen("inscripcionesDefinitivas.bin", "rb+")) != NULL) {
+        fread(&i, sizeof(inscripciones), 1, fp);
+
+        while (!feof(fp)) {
+            printf("\nAsignatura: %d", i.asignatura);
+            printf("\nAlumno: %d", i.legajo);
+            fread(&i, sizeof(inscripciones), 1, fp);
+        }
+    }
 }
