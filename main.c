@@ -28,6 +28,7 @@ void agregarCorrelativa();
 void agregarNota();
 void procesarInscripciones();
 void imprimirInscripciones();
+int getNroCorrelativa(FILE *cp, inscripciones inscripcion);
 
 /* Realizar un programa que guarde en un nuevo archivo las inscripciones de los
  * alumnos que están en condiciones de rendir de tener aprobada la correlativa
@@ -153,40 +154,25 @@ void procesarInscripciones() {
                     fread(&c, sizeof(correlativas), 1, cp);
                     fread(&n, sizeof(notas), 1, np);
                     while (!feof(ip)) {
-                        if ((i.asignatura == c.asignatura) &&
-                            (i.carrera == c.carrera)) {
+                        int aprobando = 1;
+                        int codAsignatura = getNroCorrelativa(cp, i);
 
-                            if ((c.correlativa == 0)) {
-                                fwrite(&i, sizeof(inscripciones), 1, idefp);
-                            } else {
-                                while (!feof(cp)) {
-                                    while (!feof(np)) {
-                                        if (((n.alumno == i.legajo) &&
-                                             (c.correlativa == n.asignatura)) &&
-                                            (n.nota >= 4)) {
-                                            // Seguir mirando la lista de
-                                            // correlativas, e inscribir en caso
-                                            // de haber recorrido toda la lista
-                                            // y que la nota rendida de las
-                                            // mismas sea >= 4.
-                                            fwrite(&i, sizeof(inscripciones), 1,
-                                                   idefp);
-                                        }
-                                        fread(&n, sizeof(notas), 1, np);
-                                    }
-                                    rewind(np);
-                                    fread(&c, sizeof(correlativas), 1, cp);
-                                }
-                                rewind(cp);
+                        while (codAsignatura != 0 && aprobando) {
+                            if (getNotaFromAsignatura(codAsignatura, np, i) <
+                                4) {
+                                aprobando = 0;
                             }
-                        } else {
-                            fread(&c, sizeof(correlativas), 1, cp);
+                            codAsignatura = getNroCorrelativa(cp, i);
                         }
 
-                        if (feof(cp)) {
-                            fread(&i, sizeof(inscripciones), 1, ip);
+                        if (aprobando) {
+                            fwrite(&i, sizeof(inscripciones), 1, idefp);
+                        } else {
+                            fwrite(&i, sizeof(inscripciones), 1, inoaprobp);
+                            // Consigna de libre.
                         }
                     }
+                    fread(&i, sizeof(inscripciones), 1, ip);
                 }
             }
         }
@@ -194,6 +180,48 @@ void procesarInscripciones() {
     /* exit(-1); */
     /* exit()[stdlib.h] closes and flushes all stdio streams */
     fcloseall();
+}
+
+int getNroCorrelativa(FILE *cp, inscripciones inscripcion) {
+    correlativas c;
+
+    int retorno = 0;
+
+    fseek(cp, 0, SEEK_SET);
+    fread(&c, sizeof(correlativas), 1, cp);
+
+    int encontrado = 0;
+    while (!feof(cp) && !encontrado) {
+        if (inscripcion.carrera == c.carrera &&
+            inscripcion.asignatura == c.carrera) {
+            // return c.correlativa;
+            retorno = c.correlativa;
+            encontrado = 1;
+        }
+        fread(&c, sizeof(correlativas), 1, cp);
+    }
+    return retorno;
+}
+
+int getNotaFromAsignatura(int codAsig, FILE *np, inscripciones i) {
+    // int asignatura = cp.asignatura
+    int carrera = i.carrera;
+    int legajo = i.legajo;
+    int asignatura = i.asignatura;
+
+    notas n;
+    fread(&n, sizeof(notas), 1, np);
+
+    while (!feof(np)) {
+
+        if (carrera == n.carrera && legajo == n.alumno) {
+            if (asignatura == n.asignatura) {
+                return n.nota;
+            }
+        }
+
+        fread(&n, sizeof(notas), 1, np);
+    }
 }
 
 void imprimirInscripciones() {
