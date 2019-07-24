@@ -171,8 +171,9 @@ void procesarInscripciones() {
                             fwrite(&i, sizeof(inscripciones), 1, inoaprobp);
                             // Consigna de libre.
                         }
+
+                        fread(&i, sizeof(inscripciones), 1, ip);
                     }
-                    fread(&i, sizeof(inscripciones), 1, ip);
                 }
             }
         }
